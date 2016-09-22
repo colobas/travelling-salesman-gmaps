@@ -7,7 +7,6 @@ import time
 import random
 import sys
 import math
-import hashlib
 
 def globals():
  	global returnHome
@@ -20,30 +19,29 @@ def globals():
 def randomRestart(items):
 	shuffled = list(items)
 	if(fixedOrigin):
-		shuffled = list(shuffled[1:]) # se a origem for fixa nao baralha o primeiro e adiciona no topo
+		shuffled = list(shuffled[1:]) # if origin is fixed, the first element isn't shuffled
 	if(fixedEnd):
-	 	shuffled = list(shuffled[:-1]) # se o fim for fixo nao baralha o último e adiciona no fundo
+	 	shuffled = list(shuffled[:-1]) # if destination is fixed, the last element isn't shuffled
 
 	random.shuffle(shuffled)
     
 	if(fixedOrigin):
-		shuffled.insert(0,items[0]) # origem fixa -> adiciona no topo o primeiro introduzido pelo user
+		shuffled.insert(0,items[0]) # fixed origin -> add starting point on top
 	if(fixedEnd):
-		shuffled.append(items[-1]) # fim fixo -> adiciona no fundo o primeiro introduzido pelo user
+		shuffled.append(items[-1]) # fixed destination -> add destination point on bottom
 
 	if(returnHome):
-		shuffled.append(shuffled[0]) # se voltar a casa, adiciona no fundo o primeiro da lista
+		shuffled.append(shuffled[0]) # if returning home, add the first element to the bottom of the list
 
 	return shuffled
 
 def rad(x):
 	return x * math.pi/180
 
-
 def getDistanceFromAtoB(placeA,placeB):
 	url = 'https://maps.googleapis.com/maps/api/distancematrix/json?origins='+placeA.replace(' ','+')+'&destinations='+placeB.replace(' ','+')+'&departure_time='+str(int(time.mktime(datetime.now().timetuple())))+'&mode=driving&traffic_model=best_guess&key=AIzaSyBDRaVrNOA74dFlno67A_pEMKNQHA5bPvk'
 	r = requests.get(url)
-	x = json.loads(r.text)['rows'][0]['elements']#[0]['distance']['value']
+	x = json.loads(r.text)['rows'][0]['elements']
 	if x[0]['status']=='OK':
 		return x[0]['distance']['value']
 	if x[0]['status']=='ZERO_RESULTS':
@@ -72,9 +70,6 @@ def getScore(route, edges):
 def listToString(lista):
 	return ''.join(lista)
 
-def hashStr(astring, tablesize):
-	return int(hashlib.md5(astring.encode('utf-8')).hexdigest(), 16) % tablesize
-
 def getMaxNeighbour(rota, edges):
 	aux = list(rota)	
 	aux_score = 0
@@ -90,7 +85,7 @@ def getMaxNeighbour(rota, edges):
 				if(placeA==placeB):
 					break
 				aux[i], aux[j] = aux[j], aux[i]
-				if tabu[hashStr(listToString(aux),1000)] == -1:
+				if listToString(aux) in tabu:
 					aux_score = getScore(aux,edges)
 					if aux_score < best_score:
 						best_score = aux_score
@@ -109,7 +104,7 @@ def getMaxNeighbour(rota, edges):
 				if(placeA==placeB):
 					break
 				aux[i], aux[j] = aux[j], aux[i]
-				if tabu[hashStr(listToString(aux),1000)] == -1:
+				if listToString(aux) in tabu:
 					aux_score = getScore(aux,edges)				
 					if aux_score < best_score:
 						best_score = aux_score
@@ -127,7 +122,7 @@ def getMaxNeighbour(rota, edges):
 				if(placeA==placeB):
 					break
 				aux[i], aux[j] = aux[j], aux[i]
-				if tabu[hashStr(listToString(aux),1000)] == -1:
+				if listToString(aux) in tabu:
 					aux_score = getScore(aux,edges)
 					if aux_score < best_score:
 						best_score = aux_score
@@ -147,7 +142,7 @@ def getMaxNeighbour(rota, edges):
 				if(placeA==placeB):
 					break
 				aux[i], aux[j] = aux[j], aux[i]
-				if tabu[hashStr(listToString(aux),1000)] == -1:
+				if listToString(aux) in tabu:
 					aux_score = getScore(aux,edges)
 					if aux_score < best_score:
 						best_score = aux_score
@@ -176,33 +171,33 @@ else:
 	if("--help" in sys.argv or "-h" in sys.argv):
 		print("Syntax: python maps.py [OPTIONS]")
 		print("Options:")
-		print("-h (or --help) -> imprime este menu")
+		print("-h (or --help) -> print this menu")
 		print("-r (or --return-home)")
 		print("-fo (or --fixed-origin)")
 		print("-fe (or --fixed-end)")
 		raise SystemExit
 
 
-print("Introduza os locais que quer visitar, separados por vírgula+espaço.")
+print("Type the places you want to visit, separated by comma+blankspace:")
 
 if(fixedEnd and returnHome):
-	print("Escolheu as opções fixedEnd e returnHome em simultâneo, o que não é viável. Neste caso, damos prioridade à opção returnHome.")
+	print("You picked fixedEnd and returnHome, which isn't feasible. In this case, returnHome will have priority.")
 	fixedEnd = False
 
 
 if(fixedOrigin):
-	print("Escolheu a opção fixedOrigin, o que significa que o caminho calculado terá como ponto de partida a primeira cidade que introduzir.")
+	print("You picked fixedOrigin, which means that the computed path will start on the first place you type.")
 else:
-	print("Não escolheu a opção fixedOrigin, o que signfica que o caminho calculado poderá ter como ponto de partida qualquer uma das cidades da lista.")
+	print("You didn't pick fixedOrigin, which means that the computed path might start in any of the places you type.")
 
 if(fixedEnd):
-	print("Escolheu a opção fixedEnd, o que significa que o caminho calculado terá como ponto de chegada a última cidade que introduzir.")
+	print("You picked fixedEnd, which means that the computed path will end on the last place you type.")
 else:
-	print("Não escolheu a opção fixedEnd, o que significa que o caminho calculado poderá ter como ponto de chegada qualquer uma das cidades da lista.")
+	print("You didn't pick fixedEnd, which means that the computed path might end in any of the places you type.")
 
 
 if(returnHome):
-	print("Escolheu a opção returnHome, o que significa que o caminho calculado terá em conta que que quer voltar ao sítio onde começar a viagem.")
+	print("You picked returnHome, which means that the computed path will consider that you want to return to the starting point, whichever it may be.")
 
 
 
@@ -214,58 +209,51 @@ if(returnHome):
 places = input().split(", ")
 
 #load known edges
-known_edges = [-1 for x in range(0,200000)]
+known_edges = dict()
 
 with open('edges.map','r') as f:
 	lines = f.readlines()
 	for line in lines:
-		known_edges[hashStr(line.split(' : ')[0], 200000)] = int(line.split(' : ')[1])
+		known_edges[line.split(' : ')[0]] = int(line.split(' : ')[1])
 f.closed
 
 
 #compute all the edges (distance of suggested route between placeA and placeB)
 edges = collections.defaultdict(dict)
-l=0
+
 dist = 0
-
-# numero de pares de cidades = n! / ((n - m)! * m!), com m =2
-
-comb = math.factorial(len(places)) / (math.factorial(len(places)-2) * 2)
 
 with open('edges.map','a') as f:
 	for placeA in places:
 		for placeB in places:
 			if(placeA==placeB):
 				break
-			l=l+1
 
-			if(known_edges[hashStr(placeA+" "+placeB, 200000)] != -1):
-				dist = known_edges[hashStr(placeA+" "+placeB, 200000)]
+			if listToString([placeA, placeB]) in known_edges:
+				dist = known_edges[listToString([placeA, placeB])]
 			else:
-				if(known_edges[hashStr(placeB+" "+placeA, 200000)] != -1):
-					dist = known_edges[hashStr(placeB+" "+placeA, 200000)]
+				if listToString([placeB, placeA]) in known_edges:
+					dist = known_edges[listToString([placeB, placeA])]
 				else:
 					dist = getDistanceFromAtoB(placeA,placeB)
-					f.write(placeA+" "+placeB+" : "+str(dist)+"\n")
+					f.write("{0} {1} : {2}\n".format(placeA, placeB, dist))
 
 			edges[placeA][placeB] = dist
 			edges[placeB][placeA] = dist
-			sys.stdout.write('\rCalculando arestas: %f %%' % (l//comb * 
-100))
 			sys.stdout.flush()
 
 f.closed
 
 
 rr = 0
-tabu = [-1 for x in range(0,1000)]
+tabu = dict()
 
 rota_res = randomRestart(places)
 rota_i = list(rota_res)
 rota_ii = list(rota_res)
 
 while rr < 1000:
-	sys.stdout.write('\rCorrendo o Greedy Climb: %f %%' % (rr//10))
+	sys.stdout.write('\rRunning Greedy Hill-Climb: %f %%' % (rr//10))
 	sys.stdout.flush()
 	rota_ii = getMaxNeighbour(rota_i,edges)
 		
@@ -275,163 +263,173 @@ while rr < 1000:
 	if(getScore(rota_ii,edges)<getScore(rota_res,edges)):
 		rota_res=rota_ii
 
-	tabu[hashStr(listToString(rota_i),1000)] = 1
+	tabu[listToString(rota_i)] = 1
 	rota_i = rota_ii
 print('\n\n')
-print('Rota final: '+str(rota_res))
-print('Distância total: '+str(getScore(rota_res,edges)/1000))
+print('Final path: {0}'.format(rota_res))
+print('Total distance: {0}'.format(getScore(rota_res,edges)/1000))
 
-html = ''
-html = html + ' <head>\n'
-html = html + '   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">\n'
-html = html + '   <meta charset="utf-8">\n'
-html = html + '   <title>SUPER TRIP</title>\n'
-html = html + '   <style>\n'
-html = html + '     html, body {\n'
-html = html + '       height: 100%;\n'
-html = html + '       margin: 0;\n'
-html = html + '       padding: 0;\n'
-html = html + '     }\n'
-html = html + '     #map {\n'
-html = html + '       height: 100%;\n'
-html = html + '     }\n'
-html = html + '   </style>\n'
-html = html + ' </head>\n'
-html = html + ' <body>\n'
-html = html + '   <div id="map"></div>\n'
-html = html + '   <script>\n'
-html = html + '		  var flightPlanCoordinates = [];\n'
-html = html + '       var renderArray = [];\n'
-html = html + '	      var requestArray = [];\n'
-html = html + '		  var req;\n'
-html = html + '		  var map;\n'
-html = html + '		  var directionsService;\n'
-
-html = html + '		function generateRequests() {\n'
-while len(rota_res)>1:
-	aux=list(rota_res[:2])
-	html = html + '					requestArray.push({\n'
-	html = html + '							origin: \''+aux[0]+'\',\n'
-	html = html + '							destination: \''+aux[-1]+'\',\n'
-	html = html + '							travelMode: google.maps.TravelMode.DRIVING\n'
-	html = html + '					});\n'					
-	rota_res = list(rota_res[1:])
-html = html + '				processRequests();'
-html = html + '		}\n'
-html = html + '		function processRequests(){\n'
-html = html + '				var i = 0;\n'
-html = html + '   			function submitRequest(){\n'
-html = html + '          		directionsService.route(requestArray[i], directionResults);\n'
-html = html + '   			}\n'
-html = html + '   	  		function directionResults(result, status) {\n'
-html = html + '					var geocoder = new google.maps.Geocoder();\n'
-html = html + '         		if (status == google.maps.DirectionsStatus.OK) {\n'
-html = html + '               		renderArray[i] = new google.maps.DirectionsRenderer();\n'
-html = html + '               		renderArray[i].setMap(map);\n'
-html = html + '               		renderArray[i].setOptions({\n'
-html = html + '                   		preserveViewport: true,\n'
-html = html + '                   		suppressInfoWindows: true,\n'
-html = html + '                   		polylineOptions: {\n'
-html = html + '                       		strokeWeight: 4,\n'
-html = html + '                       		strokeOpacity: 0.8,\n'
-html = html + '                       		strokeColor: \'red\'\n'
-html = html + '                   		},\n'
-html = html + '                   		markerOptions:{\n'
-html = html + '                       		icon:{\n'
-html = html + '                           		path: google.maps.SymbolPath.BACKWARD_OPEN_ARROW,\n'
-html = html + '                           		scale: 2,\n'
-html = html + '                           		strokeColor: \'blue\'\n'
-html = html + '                       		}\n'
-html = html + '                   		}\n'
-html = html + '               		});\n'
-html = html + '               		renderArray[i].setDirections(result);\n'
-html = html + '						nextRequest();\n'
-html = html + '           		}\n'
-
-html = html + '			 		if(status == google.maps.DirectionsStatus.ZERO_RESULTS){\n'
-html = html + ' 					geocoder.geocode( {address:requestArray[i].origin}, geocoderResults1);\n'
-html = html + '			 		}\n'
-html = html + '       		}\n'
-html = html + '	  	  		function geocoderResults1(results,status){\n'
-html = html + '						if (status == google.maps.GeocoderStatus.OK) \n'
-html = html + '    					{\n'
-html = html + '      					flightPlanCoordinates.push(results[0].geometry.location);\n'
-html = html + '							new google.maps.Marker({\n'
-html = html + '    							position: results[0].geometry.location,\n'
-html = html + '    							map: map,\n'
-html = html +'								icon:{\n'
-html = html + '                         		path: google.maps.SymbolPath.BACKWARD_OPEN_ARROW,\n'
-html = html + '                         		scale: 2,\n'
-html = html + '                         		strokeColor: \'blue\'\n'
-html = html + '                       		}\n'
-html = html + '							});\n'
-html = html + '						} else {\n'
-html = html + '      					alert(\'Geocode was not successful for the following reason: \' + status);\n'
-html = html + '   					}\n'
-html = html + '						nextGeo();\n'
-html = html + '	  	  		}\n'
-
-
-
-html = html + ' 			function nextGeo(){\n'
-html = html + '					var geocoder2 = new google.maps.Geocoder();\n'
-html = html + ' 					geocoder2.geocode( {address:requestArray[i].destination}, geocoderResults2);\n'
-html = html + '				}\n'
-
-html = html + '	  	  		function geocoderResults2(results,status){\n'
-html = html + '						if (status == google.maps.GeocoderStatus.OK) \n'
-html = html + '    					{\n'
-html = html + '      					flightPlanCoordinates.push(results[0].geometry.location);\n'
-html = html + '							new google.maps.Marker({\n'
-html = html + '    							position: results[0].geometry.location,\n'
-html = html + '    							map: map,\n'
-html = html +'								icon:{\n'
-html = html + '                         		path: google.maps.SymbolPath.BACKWARD_OPEN_ARROW,\n'
-html = html + '                         		scale: 2,\n'
-html = html + '                         		strokeColor: \'blue\'\n'
-html = html + '                       		}\n'
-html = html + '							});\n'
-html = html + '							var flightPath = new google.maps.Polyline({\n'
-html = html + '           					path: flightPlanCoordinates,\n'
-html = html + '           					geodesic: true,\n'
-html = html + '           					strokeColor: \'yellow\',\n'
-html = html + '           					strokeOpacity: 1.0,\n'
-html = html + '           					strokeWeight: 4\n'
-html = html + '         				});\n'
-html = html + '							flightPath.setMap(map);\n'
-html = html + '							flightPlanCoordinates = [];'
-html = html + '							nextRequest();\n'
-html = html + '						} else {\n'
-html = html + '      					alert(\'Geocode was not successful for the following reason: \' + status);\n'
-html = html + '   					}\n'
-html = html + '	  	  		}\n'
-
-
-html = html + '				function nextRequest(){\n'
-html = html + '            		i++;\n'
-html = html + '            		if(i >= requestArray.length){\n'
-html = html + '                		return;'
-html = html + '            		}\n'
-html = html + '            		submitRequest();\n'
-html = html + '        		}\n'
-html = html + '        		submitRequest();\n'
-html = html + '		}\n'
-html = html + '     function initMap() {\n'
-html = html + '			directionsService = new google.maps.DirectionsService();\n'
-html = html + '			map = new google.maps.Map(document.getElementById(\'map\'), {\n'
-html = html + '          	zoom: 2,\n'
 gmaps = googlemaps.Client(key='AIzaSyBDRaVrNOA74dFlno67A_pEMKNQHA5bPvk')
-html = html + '           	center: '+str(gmaps.geocode(rota_res[0])[0]['geometry']['location'])+'\n'
-html = html + '         });\n'
-html = html + '			generateRequests();\n'
-html = html + '		}\n'
-html = html + '   </script>\n'
-html = html + '   <script async defer\n'
-html = html + '       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBdJo19l4Np9c_H-JtYN-PeB9o37ZKfrT8&signed_in=true&callback=initMap"></script>\n'
-html = html + ' </body>\n'
-html = html + '</html>'
 
-filename=input('Nome para o ficheiro de output: ')
+html = """
+<html>
+
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #map {
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <script>
+        var flightPlanCoordinates = [];
+        var renderArray = [];
+        var requestArray = [];
+        var req;
+        var map;
+        var directionsService;
+
+        function generateRequests() {
+"""
+while len(rota_res) > 1:
+	aux=list(rota_res[:2])
+	rota_res = list(rota_res[1:])
+	html += """
+			requestArray.push({
+			    origin: '%s',
+			    destination: '%s',
+			    travelMode: google.maps.TravelMode.DRIVING
+			});				
+""" % (aux[0], aux[-1])
+
+html += """				
+			processRequests();
+		}
+		function processRequests(){
+			var i = 0;
+				function submitRequest(){
+      			directionsService.route(requestArray[i], directionResults);
+				}
+	  			function directionResults(result, status) {
+				var geocoder = new google.maps.Geocoder();
+     			if (status == google.maps.DirectionsStatus.OK) {
+           			renderArray[i] = new google.maps.DirectionsRenderer();
+           			renderArray[i].setMap(map);
+           			renderArray[i].setOptions({
+               			preserveViewport: true,
+               			suppressInfoWindows: true,
+               			polylineOptions: {
+                   			strokeWeight: 4,
+                   			strokeOpacity: 0.8,
+                   			strokeColor: 'red'
+               			},
+               			markerOptions:{
+                   			icon:{
+                       			path: google.maps.SymbolPath.BACKWARD_OPEN_ARROW,
+                       			scale: 2,
+                       			strokeColor: 'blue'
+                   			}
+               			}
+           			});
+           			renderArray[i].setDirections(result);
+						nextRequest();
+       			}
+
+		 		if(status == google.maps.DirectionsStatus.ZERO_RESULTS){
+						geocoder.geocode( {address:requestArray[i].origin}, geocoderResults1);
+		 		}
+   			}
+  	  		function geocoderResults1(results,status){
+					if (status == google.maps.GeocoderStatus.OK){
+  						flightPlanCoordinates.push(results[0].geometry.location);
+						new google.maps.Marker({
+							position: results[0].geometry.location,
+							map: map,
+							icon:{
+                     			path: google.maps.SymbolPath.BACKWARD_OPEN_ARROW,
+                     			scale: 2,
+                     			strokeColor: 'blue'
+                   			}
+						});
+					} 
+					else{
+  						alert('Geocode was not successful for the following reason: ' + status);
+						}
+					nextGeo();
+  	  		}
+				function nextGeo(){
+				var geocoder2 = new google.maps.Geocoder();
+					geocoder2.geocode( {address:requestArray[i].destination}, geocoderResults2);
+			}
+
+  	  		function geocoderResults2(results,status){
+					if (status == google.maps.GeocoderStatus.OK){
+  						flightPlanCoordinates.push(results[0].geometry.location);
+						new google.maps.Marker({
+							position: results[0].geometry.location,
+							map: map,
+							icon:{
+                     			path: google.maps.SymbolPath.BACKWARD_OPEN_ARROW,
+                     			scale: 2,
+                     			strokeColor: 'blue'
+                   			}
+						});
+						var flightPath = new google.maps.Polyline({
+       						path: flightPlanCoordinates,
+       						geodesic: true,
+       						strokeColor: 'yellow',
+       						strokeOpacity: 1.0,
+       						strokeWeight: 4
+     					});
+						flightPath.setMap(map);
+						flightPlanCoordinates = [];
+						nextRequest();
+					} 
+					else {
+  						alert('Geocode was not successful for the following reason: ' + status);
+						}
+  	  		}
+
+			function nextRequest(){
+        		i++;
+        		if(i >= requestArray.length){
+            		return;
+        		}
+        		submitRequest();
+    		}
+    		submitRequest();
+		}
+    	function initMap() {
+			directionsService = new google.maps.DirectionsService();
+			map = new google.maps.Map(document.getElementById('map'), {
+          		zoom: 2,
+           		center: 
+"""
+html += str(gmaps.geocode(rota_res[0])[0]['geometry']['location'])
+html += """
+         	});
+			generateRequests();
+		}
+   </script>
+   <script async defer
+       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBdJo19l4Np9c_H-JtYN-PeB9o37ZKfrT8&signed_in=true&callback=initMap"></script>
+</body>
+</html>
+"""
+
+filename=input('Output file name: ')
 filename=filename+'.html'
 with open(filename, 'w') as f:
 	f.write(html)
